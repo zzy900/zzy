@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>offerAI 智能面试官 · 产品原型</title>
+<style>
+  :root{
+    --primary:#409EFF; --primary-light:#ecf5ff; --success:#67C23A; --warning:#E6A23C;
+    --danger:#F56C6C; --info:#909399; --text-main:#303133; --text-regular:#606266;
+    --text-secondary:#909399; --border:#DCDFE6; --border-light:#E4E7ED; --border-lighter:#EBEEF5;
+    --bg:#f0f2f5; --radius:8px; --shadow:0 2px 12px rgba(0,0,0,.06);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;background:var(--bg);color:var(--text-main);font-size:14px;line-height:1.6}
+  button{cursor:pointer;font-family:inherit}
+  a{text-decoration:none;color:var(--primary)}
+
+  /* 布局 */
+  .layout{display:flex;min-height:100vh}
+  .sidebar{width:220px;background:#fff;border-right:1px solid var(--border-lighter);position:fixed;top:0;bottom:0;left:0;display:flex;flex-direction:column;z-index:100}
+  .brand{height:60px;display:flex;align-items:center;gap:10px;padding:0 20px;border-bottom:1px solid var(--border-lighter)}
+  .brand-logo{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#409EFF,#79bbff);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:15px}
+  .brand-name{font-size:16px;font-weight:600}
+  .brand-name small{display:block;font-size:11px;color:var(--text-secondary);font-weight:400}
+  .menu{flex:1;padding:12px 8px;overflow-y:auto}
+  .menu-item{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:6px;color:var(--text-regular);cursor:pointer;margin-bottom:4px;transition:.15s;font-size:14px}
+  .menu-item:hover{background:var(--primary-light);color:var(--primary)}
+  .menu-item.active{background:var(--primary-light);color:var(--primary);font-weight:600}
+  .menu-item .icon{width:18px;height:18px;flex-shrink:0}
+  .menu-item .badge{margin-left:auto;font-size:11px;color:#fff;background:var(--primary);padding:1px 6px;border-radius:8px}
+  .menu-item .badge.gray{background:#c0c4cc}
+  .sidebar-foot{padding:12px 20px;border-top:1px solid var(--border-lighter);font-size:12px;color:var(--text-secondary)}
+
+  .main{flex:1;margin-left:220px;display:flex;flex-direction:column}
+  .topbar{height:60px;background:#fff;border-bottom:1px solid var(--border-lighter);display:flex;align-items:center;padding:0 24px;gap:16px}
+  .topbar-title{font-size:16px;font-weight:600}
+  .topbar-right{margin-left:auto;display:flex;align-items:center;gap:16px}
+  .avatar{width:34px;height:34px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px}
+  .content{padding:24px;max-width:1100px;width:100%;margin:0 auto}
+
+  /* 通用组件 */
+  .card{background:#fff;border-radius:var(--radius);border:1px solid var(--border-lighter);box-shadow:var(--shadow);padding:20px;margin-bottom:16px}
+  .card-title{font-size:15px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+  .tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px}
+  .tag.primary{background:var(--primary-light);color:var(--primary)}
+  .tag.success{background:#f0f9eb;color:var(--success)}
+  .tag.warning{background:#fdf6ec;color:var(--warning)}
+  .tag.info{background:#f4f4f5;color:var(--info)}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 20px;border-radius:6px;font-size:14px;border:1px solid transparent;transition:.15s}
+  .btn-primary{background:var(--primary);color:#fff}
+  .btn-primary:hover{background:#66b1ff}
+  .btn-plain{background:#fff;border-color:var(--border);color:var(--text-regular)}
+  .btn-plain:hover{color:var(--primary);border-color:var(--primary)}
+  .btn-lg{padding:12px 32px;font-size:15px}
+  .btn-block{width:100%}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .grid{display:grid;gap:16px}
+  .grid-2{grid-template-columns:1fr 1fr}
+  .grid-3{grid-template-columns:repeat(3,1fr)}
+  .grid-4{grid-template-columns:repeat(4,1fr)}
+  .stat{padding:16px;border-radius:var(--radius);background:#fff;border:1px solid var(--border-lighter)}
+  .stat-label{font-size:13px;color:var(--text-secondary)}
+  .stat-value{font-size:26px;font-weight:700;margin:6px 0 2px}
+  .stat-value.blue{color:var(--primary)} .stat-value.green{color:var(--success)} .stat-value.orange{color:var(--warning)}
+  .stat-foot{font-size:12px;color:var(--text-secondary)}
+
+  .input,.select,.textarea{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;font-family:inherit;color:var(--text-main);background:#fff;outline:none;transition:.15s}
+  .input:focus,.select:focus,.textarea:focus{border-color:var(--primary)}
+  .textarea{min-height:80px;resize:vertical}
+  .form-item{margin-bottom:16px}
+  .form-label{display:block;font-size:14px;color:var(--text-regular);margin-bottom:6px}
+  .form-label .req{color:var(--danger);margin-left:2px}
+  .form-hint{font-size:12px;color:var(--text-secondary);margin-top:4px}
+
+  .progress{height:8px;background:var(--border-lighter);border-radius:4px;overflow:hidden}
+  .progress-bar{height:100%;background:var(--primary);border-radius:4px;transition:width .3s}
+
+  /* 登录页 */
+  .login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#e6f0ff 0%,#f5f7fa 60%);padding:20px}
+  .login-card{width:400px;background:#fff;border-radius:12px;box-shadow:0 6px 30px rgba(0,0,0,.1);padding:40px}
+  .login-logo{display:flex;align-items:center;gap:12px;justify-content:center;margin-bottom:8px}
+  .login-logo .brand-logo{width:44px;height:44px;font-size:20px;border-radius:12px}
+  .login-logo .t{font-size:22px;font-weight:700}
+  .login-sub{text-align:center;color:var(--text-secondary);margin-bottom:28px;font-size:13px}
+  .login-tabs{display:flex;border-bottom:1px solid var(--border-lighter);margin-bottom:24px}
+  .login-tab{flex:1;text-align:center;padding:10px 0;color:var(--text-secondary);cursor:pointer;font-size:14px;border-bottom:2px solid transparent}
+  .login-tab.active{color:var(--primary);border-bottom-color:var(--primary);font-weight:600}
+  .code-row{display:flex;gap:10px}
+  .code-row .btn{white-space:nowrap;padding:9px 12px}
+
+  /* 面试对话 */
+  .chat{display:flex;flex-direction:column;height:520px}
+  .chat-body{flex:1;overflow-y:auto;padding:16px 4px;display:flex;flex-direction:column;gap:14px}
+  .msg{display:flex;gap:10px;max-width:82%}
+  .msg .bubble{padding:11px 14px;border-radius:10px;font-size:14px;line-height:1.6;white-space:pre-wrap}
+  .msg.ai{align-self:flex-start}
+  .msg.ai .bubble{background:#f4f4f5;color:var(--text-main);border-top-left-radius:2px}
+  .msg.user{align-self:flex-end;flex-direction:row-reverse}
+  .msg.user .bubble{background:var(--primary);color:#fff;border-top-right-radius:2px}
+  .msg .ai-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#409EFF,#79bbff);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+  .typing{display:flex;gap:4px;align-items:center;padding:12px 14px}
+  .typing span{width:6px;height:6px;border-radius:50%;background:var(--info);animation:blink 1.2s infinite}
+  .typing span:nth-child(2){animation-delay:.2s}.typing span:nth-child(3){animation-delay:.4s}
+  @keyframes blink{0%,60%,100%{opacity:.3}30%{opacity:1}}
+  .chat-input{display:flex;gap:10px;border-top:1px solid var(--border-lighter);padding-top:14px}
+  .quick-replies{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+
+  /* 雷达图 */
+  .radar-svg{width:100%;max-width:340px;margin:0 auto;display:block}
+
+  /* 评分条 */
+  .score-row{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+  .score-row .name{width:80px;font-size:13px;color:var(--text-regular);text-align:right}
+  .score-row .bar{flex:1}
+  .score-row .val{width:40px;font-size:13px;font-weight:600;color:var(--primary)}
+
+  .divider{height:1px;background:var(--border-lighter);margin:16px 0}
+  .text-secondary{color:var(--text-secondary)} .text-primary{color:var(--primary)} .text-danger{color:var(--danger)} .text-success{color:var(--success)}
+  .mt-8{margin-top:8px}.mt-16{margin-top:16px}.mb-16{margin-bottom:16px}
+  .flex{display:flex;align-items:center}.flex-between{display:flex;align-items:center;justify-content:space-between}.gap-8{gap:8px}.gap-16{gap:16px}
+  .center{text-align:center}
+  .empty{padding:40px;text-align:center;color:var(--text-secondary)}
+  .empty .big{font-size:40px;margin-bottom:8px}
+
+  .muted-note{font-size:12px;color:var(--text-secondary);background:#f4f4f5;padding:4px 8px;border-radius:4px}
+
+  .resume-score-ring{width:120px;height:120px;border-radius:50%;background:conic-gradient(var(--success) 0 72%, var(--border-lighter) 72% 100%);display:flex;align-items:center;justify-content:center;position:relative}
+  .resume-score-ring::before{content:'';position:absolute;width:88px;height:88px;background:#fff;border-radius:50%}
+  .resume-score-ring .num{position:relative;font-size:28px;font-weight:700;color:var(--success)}
+  .resume-score-ring .num small{font-size:12px;color:var(--text-secondary)}
+
+  @media(max-width:768px){
+    .sidebar{display:none}
+    .main{margin-left:0}
+    .grid-2,.grid-3,.grid-4{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+
+<!-- 登录页 -->
+<div id="view-login" class="login-wrap">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="brand-logo">AI</div>
+      <div class="t">offerAI 智能面试官</div>
+    </div>
+    <div class="login-sub">让每一次模拟，都更接近真实的 offer</div>
+    <div class="login-tabs">
+      <div class="login-tab active">手机号登录</div>
+      <div class="login-tab">验证码登录</div>
+    </div>
+    <div class="form-item">
+      <label class="form-label">手机号</label>
+      <input class="input" placeholder="请输入手机号" value="138****6688">
+    </div>
+    <div class="form-item">
+      <label class="form-label">密码</label>
+      <input class="input" type="password" placeholder="请输入密码" value="12345678">
+    </div>
+    <div class="form-item flex-between" style="margin-bottom:20px">
+      <label style="font-size:13px;color:var(--text-secondary)"><input type="checkbox" checked style="vertical-align:-2px;margin-right:4px">记住我</label>
+      <a href="#" style="font-size:13px">忘记密码？</a>
+    </div>
+    <button class="btn btn-primary btn-lg btn-block" onclick="login()">登 录</button>
+    <div class="center mt-16" style="font-size:13px;color:var(--text-secondary)">还没有账号？<a href="#" onclick="login()">立即注册</a></div>
+  </div>
+</div>
+
+<!-- 主界面 -->
+<div id="view-app" class="layout" style="display:none">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-logo">AI</div>
+      <div class="brand-name">offerAI 智能面试官<small>AI 模拟面试系统</small></div>
+    </div>
+    <nav class="menu">
+      <div class="menu-item active" data-v="home" onclick="nav('home')"><span class="icon">🏠</span>首页</div>
+      <div class="menu-item" data-v="profile" onclick="nav('profile')"><span class="icon">📋</span>求职档案</div>
+      <div class="menu-item" data-v="interview" onclick="nav('interview')"><span class="icon">💬</span>AI 模拟面试</div>
+      <div class="menu-item" data-v="resume" onclick="nav('resume')"><span class="icon">📄</span>简历优化</div>
+      <div class="menu-item" data-v="guidance" onclick="nav('guidance')"><span class="icon">🧭</span>就业指导</div>
+      <div class="menu-item" data-v="community" onclick="nav('community')"><span class="icon">👥</span>求职社区<span class="badge gray">规划中</span></div>
+      <div class="menu-item" data-v="me" onclick="nav('me')"><span class="icon">👤</span>个人中心</div>
+    </nav>
+    <div class="sidebar-foot">offerAI 智能面试官 v1.0<br>产品原型 · 仅供演示</div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="topbar-title">首页</div>
+      <div class="topbar-right">
+        <span style="font-size:13px;color:var(--text-secondary)">免费版 · 今日剩余 3 次面试</span>
+        <div class="avatar">陈</div>
+      </div>
+    </div>
+    <div class="content" id="content"></div>
+  </div>
+</div>
+
+<script>
+// ============ 视图切换 ============
+const TITLES = {home:'首页',profile:'求职档案',interview:'AI 模拟面试',resume:'简历优化',guidance:'就业指导',community:'求职社区',me:'个人中心'};
+
+function login(){
+  document.getElementById('view-login').style.display='none';
+  document.getElementById('view-app').style.display='flex';
+  nav('home');
+}
+function nav(v){
+  document.querySelectorAll('.menu-item').forEach(m=>m.classList.toggle('active',m.dataset.v===v));
+  document.getElementById('topbar-title').textContent = TITLES[v];
+  const c = document.getElementById('content');
+  c.innerHTML = VIEWS[v]();
+  if(v==='interview') initInterview();
+  if(v==='report') initReport();
+  window.scrollTo(0,0);
+}
+
+// ============ 视图模板 ============
+const VIEWS = {
+  home(){
+    return `
+    <div class="grid grid-3 mb-16">
+      <div class="stat"><div class="stat-label">累计面试次数</div><div class="stat-value blue">12</div><div class="stat-foot">较上周 +3 次</div></div>
+      <div class="stat"><div class="stat-label">面试平均分</div><div class="stat-value green">82.5</div><div class="stat-foot">较上周 +4.2 分</div></div>
+      <div class="stat"><div class="stat-label">简历评分</div><div class="stat-value orange">72</div><div class="stat-foot">待优化项 3 处</div></div>
+    </div>
+
+    <div class="card" style="background:linear-gradient(120deg,#409EFF,#66b1ff);border:none;color:#fff">
+      <div style="font-size:18px;font-weight:600">下午好，陈同学 👋</div>
+      <div style="font-size:13px;opacity:.9;margin:6px 0 18px">目标岗位：前端开发工程师 · 距秋招黄金期还有 28 天，继续保持练习</div>
+      <button class="btn btn-lg" style="background:#fff;color:var(--primary)" onclick="nav('interview')">开始模拟面试 →</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">快捷入口</div>
+      <div class="grid grid-4">
+        ${entry('💬','模拟面试','开始一场真实面试演练','interview')}
+        ${entry('📄','简历优化','AI 诊断与智能改写','resume')}
+        ${entry('🧭','就业指导','职业规划与心理辅导','guidance')}
+        ${entry('👥','求职社区','面经互助（规划中）','community')}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">最新面试报告 <span class="tag primary">前端开发 · 综合面试</span></div>
+      <div class="flex-between">
+        <div>
+          <div class="stat-value blue" style="font-size:22px;margin-bottom:4px">85 分 <span class="tag success">表现优秀</span></div>
+          <div style="font-size:13px;color:var(--text-secondary)">2026-09-05 · 10 道题 · 亮点：逻辑清晰、项目表达完整</div>
+        </div>
+        <button class="btn btn-plain" onclick="goReport()">查看完整报告</button>
+      </div>
+    </div>`;
+  },
+
+  profile(){
+    return `
+    <div class="card">
+      <div class="card-title">求职档案 <span class="tag success">已完成 80%</span></div>
+      <div class="progress mb-16"><div class="progress-bar" style="width:80%"></div></div>
+      <div class="grid grid-2">
+        <div class="form-item"><label class="form-label">姓名 <span class="req">*</span></label><input class="input" value="陈晓明"></div>
+        <div class="form-item"><label class="form-label">最高学历 <span class="req">*</span></label>
+          <select class="select"><option>本科</option><option>硕士</option><option>博士</option><option>大专</option></select></div>
+        <div class="form-item"><label class="form-label">毕业院校</label><input class="input" value="华南理工大学"></div>
+        <div class="form-item"><label class="form-label">专业</label><input class="input" value="计算机科学与技术"></div>
+      </div>
+      <div class="divider"></div>
+      <div class="grid grid-2">
+        <div class="form-item"><label class="form-label">目标岗位 <span class="req">*</span></label><input class="input" value="前端开发工程师"></div>
+        <div class="form-item"><label class="form-label">目标行业</label>
+          <select class="select"><option>互联网 / IT</option><option>金融</option><option>制造业</option><option>其他</option></select></div>
+        <div class="form-item"><label class="form-label">期望城市</label><input class="input" value="广州"></div>
+        <div class="form-item"><label class="form-label">期望薪资</label><input class="input" value="15-20K"></div>
+      </div>
+      <div class="divider"></div>
+      <div class="form-item">
+        <label class="form-label">技能标签</label>
+        <div class="flex gap-8" style="flex-wrap:wrap">
+          <span class="tag primary">Vue 3</span><span class="tag primary">TypeScript</span><span class="tag primary">Element Plus</span>
+          <span class="tag primary">Node.js</span><span class="tag info">+ 添加技能</span>
+        </div>
+      </div>
+      <div class="form-item">
+        <label class="form-label">工作 / 项目经历</label>
+        <textarea class="textarea" placeholder="描述公司、岗位、时间段与职责，AI 将据此生成面试画像">2024.07-2024.10 某互联网公司 前端开发实习生，负责后台管理系统的组件化重构与性能优化。</textarea>
+        <div class="form-hint">档案将用于 AI 面试出题、简历生成与就业指导个性化推荐</div>
+      </div>
+      <div class="flex gap-8">
+        <button class="btn btn-plain">存为草稿</button>
+        <button class="btn btn-primary" onclick="nav('interview')">保存并开始面试</button>
+      </div>
+    </div>`;
+  },
+
+  interview(){
+    return `
+    <div class="card">
+      <div class="card-title">面试配置</div>
+      <div class="grid grid-3">
+        <div class="form-item"><label class="form-label">目标岗位</label><input class="input" value="前端开发工程师"></div>
+        <div class="form-item"><label class="form-label">面试类型</label>
+          <select class="select" id="cfg-type"><option>综合面试</option><option>技术面试</option><option>行为面试</option><option>HR 面试</option></select></div>
+        <div class="form-item"><label class="form-label">难度</label>
+          <select class="select" id="cfg-level"><option>中级</option><option>初级</option><option>高级</option></select></div>
+        <div class="form-item"><label class="form-label">问题轮数</label>
+          <select class="select" id="cfg-rounds"><option>5 题</option><option>3 题</option><option>10 题</option></select></div>
+        <div class="form-item"><label class="form-label">面试语言</label>
+          <select class="select"><option>中文</option><option>英文</option></select></div>
+        <div class="form-item"><label class="form-label">面试风格</label>
+          <select class="select"><option>温和引导</option><option>压力面</option></select></div>
+      </div>
+      <div class="muted-note" style="margin-bottom:16px">已根据你的求职档案自动预填岗位与难度，可手动修改</div>
+      <button class="btn btn-primary btn-lg btn-block" onclick="startInterview()">开始面试</button>
+    </div>`;
+  },
+
+  report(){
+    return `
+    <div class="grid grid-2 mb-16">
+      <div class="card center">
+        <div class="card-title" style="justify-content:center">综合评分</div>
+        <div class="resume-score-ring" style="margin:10px auto 16px"><div class="num">85<small>/100</small></div></div>
+        <div class="tag success" style="font-size:13px">表现优秀 · 超越 78% 同岗位求职者</div>
+      </div>
+      <div class="card">
+        <div class="card-title">能力维度分析</div>
+        <svg class="radar-svg" viewBox="0 0 300 220">
+          <g transform="translate(150,115)">
+            ${poly(90,5)}${poly(72,5)}${poly(54,5)}${poly(36,5)}${poly(18,5)}
+            ${['沟通表达','逻辑思维','专业知识','岗位匹配','临场应变'].map((n,i)=>spoke(90,i,n)).join('')}
+            <polygon points="${radarPoints(90,[86,90,78,84,80])}" fill="rgba(64,158,255,.25)" stroke="#409EFF" stroke-width="2"/>
+            ${radarPoints(90,[86,90,78,84,80]).split(' ').map(p=>{const [x,y]=p.split(',');return `<circle cx="${x}" cy="${y}" r="3.5" fill="#409EFF"/>`}).join('')}
+          </g>
+        </svg>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">维度评分</div>
+      ${['沟通表达',86].concat(['逻辑思维',90],['专业知识',78],['岗位匹配',84],['临场应变',80]).reduce((a,v,i,arr)=> i%2===0 ? a.concat([[arr[i],arr[i+1]]]) : a, []).map(([n,s])=>`
+        <div class="score-row"><div class="name">${n}</div><div class="bar"><div class="progress"><div class="progress-bar" style="width:${s}%;background:${s>=85?'#67C23A':s>=75?'#409EFF':'#E6A23C'}"></div></div></div><div class="val">${s}</div></div>`).join('')}
+    </div>
+
+    <div class="card">
+      <div class="card-title">逐题回顾</div>
+      ${[
+        ['Q1 请做个自我介绍','回答完整、突出项目亮点，建议补充量化成果','success','亮点'],
+        ['Q2 谈谈你在实习中的性能优化经验','逻辑清晰，但缺少具体性能数据支撑','warning','待改进'],
+        ['Q3 Vue3 响应式原理？','回答准确，能结合源码理解','success','亮点'],
+        ['Q4 为什么选择我们公司？','对公司了解不足，建议提前调研','danger','不足'],
+        ['Q5 你有什么想问我的？','提问有针对性，展现求职动机','success','亮点']
+      ].map(([q,c,color,t])=>`
+        <div style="border:1px solid var(--border-lighter);border-radius:6px;padding:12px;margin-bottom:10px">
+          <div class="flex-between"><div style="font-weight:600;font-size:13px">${q}</div><span class="tag ${color}">${t}</span></div>
+          <div style="font-size:13px;color:var(--text-regular);margin-top:6px">${c}</div>
+        </div>`).join('')}
+      <button class="btn btn-primary" onclick="nav('interview')">再次练习</button>
+    </div>`;
+  },
+
+  resume(){
+    return `
+    <div class="card center" style="border:2px dashed var(--border)">
+      <div class="empty"><div class="big">📄</div><div style="font-size:15px;color:var(--text-main)">上传简历，AI 智能诊断</div><div style="font-size:13px;margin:8px 0 16px">支持 PDF / Word / 图片格式</div></div>
+      <button class="btn btn-primary btn-lg" onclick="showResumeResult()">上传并解析简历</button>
+    </div>`;
+  },
+
+  guidance(){
+    return `
+    <div class="grid grid-2">
+      ${guideCard('🧭','职业规划咨询','基于你的求职档案，生成个性化职业方向与发展路径建议',['职业方向分析','能力差距评估','学习提升路线'],'#409EFF')}
+      ${guideCard('💗','求职心理辅导','面对求职焦虑与挫败情绪，提供 AI 情绪疏导与减压支持',['AI 情绪疏导','呼吸放松训练','正向激励'],'#67C23A')}
+      ${guideCard('📚','干货内容','面试技巧、简历方法、行业知识等求职干货',['面试攻略','简历指南','行业洞察'],'#E6A23C')}
+      ${guideCard('📊','就业数据','行业薪酬、岗位需求、招聘动态等资讯',['薪酬水平','岗位热度','招聘趋势'],'#F56C6C')}
+    </div>`;
+  },
+
+  community(){
+    return `
+    <div class="card center">
+      <div class="empty"><div class="big">👥</div><div style="font-size:16px;font-weight:600">求职社区 · 规划中</div><div style="font-size:13px;margin:8px 0">面经互助、题库众创、模拟面试搭子匹配</div></div>
+      <div class="flex gap-8" style="justify-content:center">
+        <span class="tag primary">问答 / 经验分享</span><span class="tag primary">面经题库众创</span><span class="tag primary">互助匹配搭子</span>
+      </div>
+      <div style="font-size:13px;color:var(--text-secondary);margin-top:16px">预计 V2.0 上线，敬请期待</div>
+    </div>`;
+  },
+
+  me(){
+    return `
+    <div class="card">
+      <div class="flex gap-16" style="margin-bottom:20px">
+        <div class="avatar" style="width:64px;height:64px;font-size:26px">陈</div>
+        <div>
+          <div style="font-size:18px;font-weight:600">陈晓明</div>
+          <div style="font-size:13px;color:var(--text-secondary)">目标：前端开发工程师 · 广州</div>
+          <div class="mt-8"><span class="tag warning">免费版</span> <a href="#" style="font-size:13px">升级会员</a></div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      ${['📋 我的求职档案','💬 面试历史与报告','📄 简历管理','👑 会员与权益','🔔 消息通知','💬 意见反馈'].map(x=>`
+        <div class="flex-between" style="padding:12px 0;border-bottom:1px solid var(--border-lighter);cursor:pointer"><span>${x}</span><span style="color:var(--text-secondary)">›</span></div>`).join('')}
+      <div class="flex-between" style="padding:12px 0;cursor:pointer"><span>🚪 退出登录</span><span style="color:var(--text-secondary)">›</span></div>
+    </div>`;
+  }
+};
+
+function entry(icon,t,d,v){return `<div class="card" style="cursor:pointer;margin:0" onclick="nav('${v}')"><div style="font-size:26px">${icon}</div><div style="font-weight:600;margin:6px 0 2px">${t}</div><div style="font-size:12px;color:var(--text-secondary)">${d}</div></div>`}
+function guideCard(icon,t,d,items,color){return `<div class="card"><div style="font-size:28px">${icon}</div><div style="font-weight:600;font-size:16px;margin:8px 0 4px">${t}</div><div style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">${d}</div><div class="flex gap-8" style="flex-wrap:wrap">${items.map(i=>`<span class="tag" style="background:${color}1a;color:${color}">${i}</span>`).join('')}</div></div>`}
+
+function poly(r,n){const pts=[];for(let i=0;i<n;i++){const a=-Math.PI/2+i*2*Math.PI/n;pts.push(`${r*Math.cos(a)},${r*Math.sin(a)}`)}return `<polygon points="${pts.join(' ')}" fill="none" stroke="#EBEEF5" stroke-width="1"/>`}
+function spoke(r,i,n){const a=-Math.PI/2+i*2*Math.PI/5;const x=r*Math.cos(a),y=r*Math.sin(a);return `<line x1="0" y1="0" x2="${x}" y2="${y}" stroke="#EBEEF5"/><text x="${x*1.14}" y="${y*1.14+4}" font-size="10" fill="#909399" text-anchor="middle">${n}</text>`}
+function radarPoints(r,vals){return vals.map((v,i)=>{const a=-Math.PI/2+i*2*Math.PI/5;const rr=r*v/100;return `${rr*Math.cos(a)},${rr*Math.sin(a)}`}).join(' ')}
+
+// ============ 面试脚本流程 ============
+const SCRIPT = [
+  {ai:'你好，欢迎参加本次前端开发工程师模拟面试。我是你的 AI 面试官。\n\n请先做一个简短的自我介绍，让我快速了解你的背景。',quick:['我是计算机专业应届生，熟悉 Vue3 与 TypeScript','我有半年前端实习经验，做过组件化重构']},
+  {ai:'感谢你的介绍。了解到你熟悉 Vue 3 与响应式系统。\n\n第一个问题：请谈谈 Vue 3 的响应式原理，与 Vue 2 相比有什么改进？',quick:['基于 Proxy 实现，能拦截对象动态属性的增删']},
+  {ai:'不错的回答，提到了 Proxy 的核心优势。\n\n追问：如果让你优化一个首屏加载缓慢的中后台项目，你会从哪些方面入手？',quick:['路由懒加载、组件按需引入、图片与第三方库优化']},
+  {ai:'思路很清晰。\n\n最后一个问题：你为什么选择我们公司？对未来的职业规划是怎样的？',quick:['看好贵司技术栈与业务方向，希望深耕前端领域']},
+  {ai:'好的，本次面试到这里就结束了。\n\n感谢你的参与，AI 正在为你生成面试报告……',quick:[]}
+];
+
+let qIdx = 0, inChat = false;
+function startInterview(){
+  qIdx = 0;
+  document.getElementById('topbar-title').textContent = 'AI 模拟面试';
+  const c = document.getElementById('content');
+  c.innerHTML = `
+    <div class="card">
+      <div class="card-title flex-between"><span>💬 前端开发工程师 · 综合面试 · 中级</span><span class="tag primary">第 1 轮</span></div>
+      <div class="chat">
+        <div class="chat-body" id="chat-body"></div>
+        <div class="quick-replies" id="quick"></div>
+        <div class="chat-input">
+          <input class="input" id="chat-text" placeholder="输入你的回答，或点击下方快捷回复…">
+          <button class="btn btn-primary" onclick="sendMsg()">发送</button>
+        </div>
+      </div>
+    </div>`;
+  inChat = true;
+  addAi(SCRIPT[0].ai);
+  renderQuick(0);
+}
+
+function addMsg(cls,html,avatar){
+  const body = document.getElementById('chat-body');
+  const div = document.createElement('div');
+  div.className = 'msg '+cls;
+  div.innerHTML = avatar ? `<div class="ai-avatar">AI</div><div class="bubble">${html}</div>` : `<div class="bubble">${html}</div>`;
+  body.appendChild(div);
+  body.scrollTop = body.scrollHeight;
+  return div;
+}
+function addAi(t){
+  const d = addMsg('ai', typingHtml(), true);
+  setTimeout(()=>{d.querySelector('.bubble').innerHTML = t.replace(/\n/g,'<br>');d.querySelector('.bubble').classList.remove('typing');}, 700);
+}
+function typingHtml(){return '<span class="typing"><span></span><span></span><span></span></span>'}
+function renderQuick(i){
+  const q = document.getElementById('quick');
+  q.innerHTML = SCRIPT[i].quick.map((s,j)=>`<span class="tag primary" style="cursor:pointer;padding:7px 12px" onclick="pickQuick(${i},${j})">${s}</span>`).join('');
+}
+function pickQuick(i,j){document.getElementById('chat-text').value = SCRIPT[i].quick[j]; sendMsg();}
+function sendMsg(){
+  const t = document.getElementById('chat-text').value.trim();
+  if(!t || !inChat) return;
+  addMsg('user', t.replace(/\n/g,'<br>'));
+  document.getElementById('chat-text').value='';
+  const i = qIdx;
+  qIdx++;
+  if(i < SCRIPT.length - 1){
+    setTimeout(()=>{ addAi(SCRIPT[i+1].ai); renderQuick(i+1);
+      document.querySelector('.tag.primary[style*="第"]').textContent = `第 ${Math.min(i+2, SCRIPT.length-1)} 轮`;
+    }, 600);
+    renderQuick(-1);
+  } else {
+    setTimeout(()=>{ inChat=false; document.getElementById('quick').innerHTML='';
+      document.querySelector('.chat-input').innerHTML = `<button class="btn btn-primary btn-lg btn-block" onclick="goReport()">生成面试报告 →</button>`;
+    }, 600);
+  }
+}
+function initInterview(){}
+function initReport(){}
+function goReport(){
+  document.getElementById('topbar-title').textContent = '面试报告';
+  const c = document.getElementById('content');
+  c.innerHTML = VIEWS.report();
+}
+function showResumeResult(){
+  const c = document.getElementById('content');
+  c.innerHTML = `
+    <div class="grid grid-2 mb-16">
+      <div class="card center">
+        <div class="card-title" style="justify-content:center">简历综合评分</div>
+        <div class="resume-score-ring" style="margin:10px auto 16px"><div class="num">72<small>/100</small></div></div>
+        <div class="tag warning" style="font-size:13px">良好 · 有较大提升空间</div>
+      </div>
+      <div class="card">
+        <div class="card-title">诊断维度</div>
+        ${[['完整性',80],['结构清晰度',75],['关键词匹配',68],['量化成果',55],['语言表达',82],['岗位匹配',72]].map(([n,s])=>`
+        <div class="score-row"><div class="name" style="width:88px">${n}</div><div class="bar"><div class="progress"><div class="progress-bar" style="width:${s}%;background:${s>=80?'#67C23A':s>=65?'#409EFF':'#E6A23C'}"></div></div></div><div class="val">${s}</div></div>`).join('')}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">优化建议（3 处）</div>
+      ${[
+        ['缺少量化成果','实习经历中「负责后台系统重构」未体现具体数据，建议补充「首屏加载时间降低 40%」等量化指标','一键改写'],
+        ['关键词匹配不足','简历未突出「Vue 3 / TypeScript」等目标岗位高频关键词，建议在技能与经历中强化','一键优化'],
+        ['结构可优化','项目经历未按 STAR 法则组织，建议补充背景、任务、行动、结果','一键调整']
+      ].map(([t,c,a])=>`
+        <div style="border:1px solid var(--border-lighter);border-radius:6px;padding:12px;margin-bottom:10px">
+          <div class="flex-between"><div style="font-weight:600;font-size:13px">${t}</div><span class="tag warning">待改进</span></div>
+          <div style="font-size:13px;color:var(--text-regular);margin:8px 0">${c}</div>
+          <div class="flex-between"><span class="muted-note">原文：负责后台管理系统的组件化重构与性能优化</span><button class="btn btn-plain" style="padding:5px 12px;font-size:12px">${a}</button></div>
+        </div>`).join('')}
+      <button class="btn btn-primary" onclick="nav('resume')">选择模板导出</button>
+    </div>`;
+}
+
+nav('home');
+</script>
+</body>
+</html>

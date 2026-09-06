@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 offerAI 智能面试官 —— 面向求职人群的 AI 模拟面试系统。产品需求见 [PRD.md](PRD.md)，它是功能与产品决策的唯一事实来源，做功能前先读它。
 
-**当前状态：greenfield（空仓库）。** 截至 2026-09-06，仓库内仅有 PRD.md，尚未创建任何前后端代码。以下架构与命令基于已确认的技术选型，待脚手架落地后以实际文件为准。
+**当前状态**：前端 `frontend/` 已搭建（Vue 3 + TS + Element Plus，含原型级页面与可交互的脚本化面试流程）；后端 `backend/` 尚未创建。另有 `prototype.html` 为纯静态高保真原型，`PRD.md` 为产品需求。
 
 ## 技术栈（已确认）
 
@@ -20,11 +20,12 @@ offerAI 智能面试官 —— 面向求职人群的 AI 模拟面试系统。产
 
 ### 前端 `frontend/`
 
-Vue 3 组合式 API（`<script setup>`），TypeScript 严格模式，Element Plus 作为 UI 组件库，Vite 作为开发与构建工具。路由用 Vue Router，状态管理用 Pinia。
+Vue 3 组合式 API（`<script setup>`），TypeScript 严格模式，Element Plus 作为 UI 组件库，Vite 作为开发与构建工具。路由用 Vue Router（hash 模式），状态管理用 Pinia。
 
-页面路由与 PRD 六大模块一一对应：登录/首页、求职档案、AI 模拟面试、简历优化、就业指导、个人中心。
-
-AI 面试交互是核心场景，涉及流式输出（SSE / WebSocket）与可能的语音输入，相关组件需独立封装复用。
+- 路由定义在 `src/router/index.ts`，页面在 `src/views/`，跨页复用组件在 `src/components/`，Pinia store 在 `src/stores/`，类型在 `src/types/`。
+- 页面路由与 PRD 六大模块一一对应：登录（`/login`）、首页（`/home`）、求职档案（`/profile`）、AI 模拟面试（`/interview`）、面试报告（`/report`）、简历优化（`/resume`）、就业指导（`/guidance`）、求职社区（`/community`）、个人中心（`/me`）。
+- 面试对话是脚本化演示（`src/stores/interview.ts` 里的 `SCRIPT` 数组），非真实 AI。接真实后端时需改为 SSE/流式调用。
+- 共享 UI 组件：`StatCard`（数据卡）、`ScoreRing`（评分环）、`ScoreBar`（评分条）、`RadarChart`（SVG 雷达图，纯手绘无图表库依赖）。
 
 ### 后端 `backend/`
 
@@ -42,18 +43,16 @@ MySQL 核心实体大致对应 PRD 字段：用户、求职档案（多份）、
 
 ## 开发命令
 
-以下为所选技术栈的标准命令，脚手架生成后即适用；若实际命令不同，以 `package.json` / `pyproject.toml` 为准。
-
 前端（在 `frontend/` 下）：
 
 ```bash
 npm install          # 安装依赖
-npm run dev          # 启动开发服务器
-npm run build        # 生产构建
-npm run lint         # 代码检查
+npm run dev          # 启动开发服务器（默认 http://localhost:5173）
+npm run build        # 生产构建（vue-tsc 类型检查 + vite build）
+npm run type-check   # 仅做 TypeScript 类型检查，不产出
 ```
 
-后端（在 `backend/` 下，建议使用虚拟环境）：
+后端（在 `backend/` 下，尚未创建，建议使用虚拟环境）：
 
 ```bash
 pip install -r requirements.txt   # 安装依赖
